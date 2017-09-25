@@ -5,6 +5,10 @@ var https = require('https');
 var parseString = require('xml2js').parseString;
 var app = express();
 const key = process.env["GOODREADS_KEY"];
+var port = process.env.PORT || 3000;
+
+console.log(key);
+console.log(port);
 
 app.get('/', function (req, res) {
         console.log(req.query);
@@ -41,4 +45,4 @@ app.get('/', function (req, res) {
     });
         
 
-app.listen(3000);
+app.listen(port);
