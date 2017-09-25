@@ -4,11 +4,13 @@ var fetch = require('node-fetch');
 var https = require('https');
 var parseString = require('xml2js').parseString;
 var app = express();
+var cors = require('cors');
 const key = process.env["GOODREADS_KEY"];
 var port = process.env.PORT || 3000;
 
 console.log(key);
 console.log(port);
+app.use(cors());
 
 app.get('/', function (req, res) {
         console.log(req.query);
