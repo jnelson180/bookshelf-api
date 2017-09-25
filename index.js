@@ -4,10 +4,7 @@ var https = require('https');
 require('dotenv').config();
 var parseString = require('xml2js').parseString;
 var app = express();
-console.log(process.env["GOODREADS_KEY"]);
-const key = process.env["GOODREADS_KEY"] || ENV["GOODREADS_KEY"];
-
-
+const key = process.env["GOODREADS_KEY"];
 
 var zlib = require('zlib');
 
