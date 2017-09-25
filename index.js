@@ -34,6 +34,7 @@ app.get('/', function (req, res) {
                             let rev = r.GoodreadsResponse.reviews[0].review;
                             // console.dir(rev);
                             reviews = rev;
+                            console.log(rev);
                             res.send(rev);
                         });
                     } catch (e) {
@@ -42,6 +43,7 @@ app.get('/', function (req, res) {
                 });
             }).on('error', (e) => {
                 console.error(`Got error: ${e.message}`);
+                console.log(reviews);
                 res.send(reviews);
             });
     });
