@@ -6,20 +6,39 @@ var parseString = require('xml2js').parseString;
 var app = express();
 var cors = require('cors');
 const key = process.env["GOODREADS_KEY"];
+const dbUser = process.env["DB_USER"];
+const dbPassword = process.env["DB_PASSWORD"];
 var port = process.env.PORT || 3000;
 var bodyParser = require('body-parser');
 require('body-parser-xml')(bodyParser);
+var mongo = require('mongodb');
+var MongoClient = mongodb.MongoClient;
 
-console.log(key);
-console.log(port);
+var url = 'mongodb://' + dbUser + ':' + dbPassword + '@ds155934.mlab.com:55934/bookshelf-db';      
 
 app.use(cors());
 app.use(bodyParser.xml({limit: '2mb'}));
 
-
 app.post('/', function (req, res) {
     console.log(req);
     console.log(req.body);
+// Use connect method to connect to the Server
+    MongoClient.connect(url, function (err, db) {
+    if (err) {
+        console.log('Unable to connect to the mongoDB server. Error:', err);
+    } else {
+        console.log('Connection established to', url);
+        // do some db work
+        let collection = db.collection('read');
+        try {
+            db.updateOne({}, {$set: {"latest": req.body}});
+        } catch(e) {
+            console.log(e);
+        }
+        //Close connection
+        db.close();
+    }
+    });    
 });
 
 app.get('/', function (req, res) {
@@ -57,5 +76,5 @@ app.get('/', function (req, res) {
             });
     });
         
-
+console.log('App listening on port', port);
 app.listen(port);
