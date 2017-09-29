@@ -20,9 +20,10 @@ app.use(cors());
 app.use(bodyParser.xml({limit: '2mb'}));
 
 app.post('/', function (req, res) {
-    console.log(req);
     console.log(req.body);
-// Use connect method to connect to the Server
+    let bodyString = req.body.toString().replace('$', 'dlr');
+
+    // Use connect method to connect to the Server
     MongoClient.connect(url, function (err, db) {
     if (err) {
         console.log('Unable to connect to the mongoDB server. Error:', err);
@@ -31,7 +32,10 @@ app.post('/', function (req, res) {
         // do some db work
         let collection = db.collection('read');
         try {
-            collection.updateOne({}, {$set: {"latest": req.body.toString()}});
+            collection.findOneAndReplace({}, {
+                "time": new Date(),
+                "data": JSON.stringify(req.body)
+        });
         } catch(e) {
             console.log(e);
         }
