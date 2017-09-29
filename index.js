@@ -23,30 +23,56 @@ app.post('/', function (req, res) {
     console.log(req.body);
     let bodyString = req.body.toString().replace('$', 'dlr');
 
-    // Use connect method to connect to the Server
     MongoClient.connect(url, function (err, db) {
-    if (err) {
-        console.log('Unable to connect to the mongoDB server. Error:', err);
-    } else {
-        console.log('Connection established to', url);
-        // do some db work
-        let collection = db.collection('read');
-        try {
-            collection.findOneAndReplace({}, {
-                "time": new Date(),
-                "data": JSON.stringify(req.body)
-        });
-        } catch(e) {
-            console.log(e);
+        if (err) {
+            console.log('Unable to connect to the mongoDB server. Error:', err);
+        } else {
+            console.log('Connection established to', url);
+            let collection = db.collection('read');
+            try {
+                collection.findOneAndReplace({}, {
+                    "time": new Date(),
+                    "data": JSON.stringify(req.body)
+            });
+            } catch(e) {
+                console.log(e);
+            }
+
+            db.close();
         }
-        //Close connection
-        db.close();
-    }
     });    
 });
 
+app.get('/nudge', function (req, res) {
+    // remind app to get ready to serve requests
+})
+
+app.get('/api', function (req, res) {
+    // get result from db, parse, and return
+    MongoClient.connect(url, function (err, db) {
+        if (err) {
+            console.log('Unable to connect to the mongoDB server. Error:', err);
+        } else {
+            console.log('Connection established to', url);
+            let collection = db.collection('read');
+            try {
+                let result = collection.findOne()
+                    .then((res) => {
+                        console.log(res);
+                    })
+                    .catch((err) => {
+                        console.log('error:', err);
+                    })
+            } catch(e) {
+                console.log(e);
+            }
+
+            db.close();
+        }
+    });        
+})
+
 app.get('/', function (req, res) {
-        console.log(req.query);
         const id = req.query.id;
         const shelf = req.query.shelf;
         const sort = req.query.sort;
@@ -57,7 +83,6 @@ app.get('/', function (req, res) {
         https.get("https://www.goodreads.com/review/list?v=2&id=" + id + "&shelf=" + shelf + 
             "&sort=" + sort + "&key=" + key + "&per_page=" + perPage, 
             (response) => {
-                // console.log(response);
                 response.setEncoding('utf8');
                 let rawData = '';
                 response.on('data', (chunk) => { rawData += chunk; });
@@ -65,9 +90,8 @@ app.get('/', function (req, res) {
                     try {
                         parseString(rawData, function (err, r) {
                             let rev = r.GoodreadsResponse.reviews[0].review;
-                            // console.dir(rev);
+                            console.dir(rev);
                             reviews = rev;
-                            console.log(rev);
                             res.send(rev);
                         });
                     } catch (e) {
