@@ -57,9 +57,9 @@ app.get('/api', function (req, res) {
             let collection = db.collection('read');
             try {
                 let result = collection.findOne()
-                    .then((res) => {
-                        console.log(res);
-                        req.send(res);
+                    .then((result) => {
+                        console.log(result);
+                        res.send(res);
                     })
                     .catch((err) => {
                         console.log('error:', err);
