@@ -7,10 +7,20 @@ var app = express();
 var cors = require('cors');
 const key = process.env["GOODREADS_KEY"];
 var port = process.env.PORT || 3000;
+var bodyParser = require('body-parser');
+require('body-parser-xml')(bodyParser);
 
 console.log(key);
 console.log(port);
+
 app.use(cors());
+app.use(bodyParser.xml());
+
+
+app.post('/', function (req, res) {
+    console.log(req);
+    console.log(req.body);
+});
 
 app.get('/', function (req, res) {
         console.log(req.query);
@@ -43,7 +53,6 @@ app.get('/', function (req, res) {
                 });
             }).on('error', (e) => {
                 console.error(`Got error: ${e.message}`);
-                console.log(reviews);
                 res.send(reviews);
             });
     });
