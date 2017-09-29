@@ -31,7 +31,7 @@ app.post('/', function (req, res) {
         // do some db work
         let collection = db.collection('read');
         try {
-            collection.updateOne({}, {$set: {"latest": req.body}});
+            collection.updateOne({}, {$set: {"latest": req.body.toString()}});
         } catch(e) {
             console.log(e);
         }
