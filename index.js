@@ -12,7 +12,7 @@ var port = process.env.PORT || 3000;
 var bodyParser = require('body-parser');
 require('body-parser-xml')(bodyParser);
 var mongo = require('mongodb');
-var MongoClient = mongodb.MongoClient;
+var MongoClient = mongo.MongoClient;
 
 var url = 'mongodb://' + dbUser + ':' + dbPassword + '@ds155934.mlab.com:55934/bookshelf-db';      
 
