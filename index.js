@@ -14,8 +14,7 @@ console.log(key);
 console.log(port);
 
 app.use(cors());
-app.use(bodyParser({limit: '1mb'}));
-app.use(bodyParser.xml());
+app.use(bodyParser.xml({limit: '2mb'}));
 
 
 app.post('/', function (req, res) {
