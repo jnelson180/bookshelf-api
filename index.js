@@ -14,10 +14,10 @@ require('body-parser-xml')(bodyParser);
 var mongo = require('mongodb');
 var MongoClient = mongo.MongoClient;
 
-var url = 'mongodb://' + dbUser + ':' + dbPassword + '@ds155934.mlab.com:55934/bookshelf-db';      
+var url = 'mongodb://' + dbUser + ':' + dbPassword + '@ds155934.mlab.com:55934/bookshelf-db';
 
 app.use(cors());
-app.use(bodyParser.xml({limit: '2mb'}));
+app.use(bodyParser.xml({ limit: '2mb' }));
 
 app.post('/', function (req, res) {
     console.log(req.body);
@@ -33,19 +33,20 @@ app.post('/', function (req, res) {
                 collection.findOneAndReplace({}, {
                     "time": new Date(),
                     "data": JSON.stringify(req.body)
-            });
-            } catch(e) {
+                });
+            } catch (e) {
                 console.log(e);
             }
 
             db.close();
         }
-    });    
+    });
 });
 
 app.get('/nudge', function (req, res) {
     // remind app to get ready to serve requests
-})
+    res.send(':)');
+});
 
 app.get('/api', function (req, res) {
     // get result from db, parse, and return
@@ -64,46 +65,46 @@ app.get('/api', function (req, res) {
                     .catch((err) => {
                         console.log('error:', err);
                     })
-            } catch(e) {
+            } catch (e) {
                 console.log(e);
             }
 
             db.close();
         }
-    });        
+    });
 })
 
 app.get('/', function (req, res) {
-        const id = req.query.id;
-        const shelf = req.query.shelf;
-        const sort = req.query.sort;
-        const perPage = req.query.per_page;
+    const id = req.query.id;
+    const shelf = req.query.shelf;
+    const sort = req.query.sort;
+    const perPage = req.query.per_page;
 
-        var reviews = null;
+    var reviews = null;
 
-        https.get("https://www.goodreads.com/review/list?v=2&id=" + id + "&shelf=" + shelf + 
-            "&sort=" + sort + "&key=" + key + "&per_page=" + perPage, 
-            (response) => {
-                response.setEncoding('utf8');
-                let rawData = '';
-                response.on('data', (chunk) => { rawData += chunk; });
-                response.on('end', () => {
-                    try {
-                        parseString(rawData, function (err, r) {
-                            let rev = r.GoodreadsResponse.reviews[0].review;
-                            console.dir(rev);
-                            reviews = rev;
-                            res.send(rev);
-                        });
-                    } catch (e) {
+    https.get("https://www.goodreads.com/review/list?v=2&id=" + id + "&shelf=" + shelf +
+        "&sort=" + sort + "&key=" + key + "&per_page=" + perPage,
+        (response) => {
+            response.setEncoding('utf8');
+            let rawData = '';
+            response.on('data', (chunk) => { rawData += chunk; });
+            response.on('end', () => {
+                try {
+                    parseString(rawData, function (err, r) {
+                        let rev = r.GoodreadsResponse.reviews[0].review;
+                        console.dir(rev);
+                        reviews = rev;
+                        res.send(rev);
+                    });
+                } catch (e) {
                     console.error('e:', e.message);
-                    }
-                });
-            }).on('error', (e) => {
-                console.error(`Got error: ${e.message}`);
-                res.send(reviews);
+                }
             });
-    });
-        
+        }).on('error', (e) => {
+            console.error(`Got error: ${e.message}`);
+            res.send(reviews);
+        });
+});
+
 console.log('App listening on port', port);
 app.listen(port);
