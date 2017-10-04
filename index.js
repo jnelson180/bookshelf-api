@@ -37,7 +37,6 @@ app.post('/', function (req, res) {
             } catch (e) {
                 console.log(e);
             }
-
             db.close();
         }
     });
@@ -53,6 +52,7 @@ app.get('/api', function (req, res) {
     MongoClient.connect(url, function (err, db) {
         if (err) {
             console.log('Unable to connect to the mongoDB server. Error:', err);
+            res.send(err);
         } else {
             console.log('Connection established to', url);
             let collection = db.collection('read');
@@ -64,11 +64,12 @@ app.get('/api', function (req, res) {
                     })
                     .catch((err) => {
                         console.log('error:', err);
+                        res.send(err);
                     })
             } catch (e) {
                 console.log(e);
+                res.send(err);
             }
-
             db.close();
         }
     });
