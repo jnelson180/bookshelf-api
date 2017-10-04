@@ -99,11 +99,12 @@ app.get('/', function (req, res) {
                     });
                 } catch (e) {
                     console.error('e:', e.message);
+                    res.send(error);
                 }
             });
         }).on('error', (e) => {
             console.error(`Got error: ${e.message}`);
-            res.send(reviews);
+            res.send(e);
         });
 });
 
