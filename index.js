@@ -35,7 +35,7 @@ app.post('/', function (req, res) {
                     "data": JSON.stringify(req.body)
                 });
             } catch (e) {
-                console.log(e);
+                console.log("Caught error:", e);
             }
             db.close();
         }
