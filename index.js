@@ -99,7 +99,7 @@ app.get('/', function (req, res) {
                     });
                 } catch (e) {
                     console.error('e:', e.message);
-                    res.send(error);
+                    res.send(e);
                 }
             });
         }).on('error', (e) => {
