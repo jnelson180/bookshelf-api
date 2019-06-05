@@ -159,10 +159,12 @@ function scrapeReviews(req, res, books) {
                     resolve();
                 }
 
-                data.review.replace("'", "&apos;");
-                data.review.replace('"', '&quot;');
+                // data.review.replace("'", "&apos;");
+                // data.review.replace('"', '&quot;');
+                data.review = encode(data.review);
                 data.review += '<br /><br />See this review and more at <a href="' + getUrl(slug) + '">Goodreads</a>.';
                 data.url = getUrl(slug);
+                data.title = encode(data.title);
                 reviewsData.push(data);
                 data.date = d;
 
@@ -179,13 +181,18 @@ function scrapeReviews(req, res, books) {
         });
     });
 
+    const encode = (rawStr) => rawStr.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+        return '&#'+i.charCodeAt(0)+';';
+    });
+
     // scrape each review
     Promise.all(promises).then((r) => {
         console.log("REVIEWSDATA:", reviewsData);
         let formattedData = "INSERT INTO `yee_posts` (`ID`, `post_author`, `post_date`, `post_date_gmt`, `post_content`, `post_title`, `post_excerpt`, `post_status`, `comment_status`, `ping_status`, `post_password`, `post_name`, `to_ping`, `pinged`, `post_modified`, `post_modified_gmt`, `post_content_filtered`, `post_parent`, `guid`, `menu_order`, `post_type`, `post_mime_type`, `comment_count`) VALUES ";
 
         reviewsData.forEach((data, i) => {
-            const { review, title, author, url, date } = data;
+            let { review, title, author, url, date } = data;
+            title = encode(title);
 
             const mmt = moment(date);
             const formatted = mmt.format("YYYY-MM-DD HH:MM:SS");
