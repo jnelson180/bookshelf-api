@@ -1,4 +1,6 @@
 require('dotenv').config();
+var moment = require('moment');
+
 var express = require('express');
 var fetch = require('node-fetch');
 var https = require('https');
@@ -20,119 +22,72 @@ var url = 'mongodb://' + dbUser + ':' + dbPassword + '@ds155934.mlab.com:55934/b
 app.use(cors());
 app.use(bodyParser.xml({ limit: '16mb' }));
 
+// https://localhost:3000/?id=78840638&shelf=read&perPage=20
 const getReviews = (req, res, id, shelf, sort, perPage, page) => {
     let allReviews = [];
-    let allBookIds = [];
+    let allBooks = [];
     let i = 1;
 
     const go = (page) => https.get("https://www.goodreads.com/review/list?v=2&id=" + id + "&shelf=" + shelf +
-            "&sort=" + sort + "&key=" + key + "&per_page=" + perPage + "&page=" + page,
-            (response) => {
-                response.setEncoding('utf8');
-                let rawData = '';
-                response.on('data', (chunk) => { rawData += chunk; });
-                response.on('end', () => {
-                    try {
-                        parseString(rawData, function (err, r) {
-                            const data = r.GoodreadsResponse.reviews[0];
-                            const pagination = data['$'];
-                            const reviews = data.review.map((r) => r.id);
-                            const urls = data.review.map((r) => r.url);
-                            const books = data.review.map((r) => {
-                                return {
-                                    title: r.book[0].title[0],
-                                    author: r.book[0].authors[0].author[0].name[0],
-                                    reviewId: r.id[0],
-                                    reviewUrl: r.url[0]
-                                }
-                            });
-                            // console.log({ reviews, urls });
-                            // console.log(books);
-                            console.log({ pagination })
-                            // console.log(data)
-                            bookIds = books.map((book) => book.reviewId);
-                            allBookIds = allBookIds.concat(bookIds);
-                            // return bookIds
-                            console.log({ allBookIds });
-
-                            // if (pagination.end === pagination.total) {
-                            if (i === 3) {
-                                scrapeReviews(req, res, bookIds);
-                            } else {
-                                i += 1;
-                                setTimeout(() => {
-                                    go(i);
-                                }, 1100)
+        "&sort=" + sort + "&key=" + key + "&per_page=" + perPage + "&page=" + page,
+        (response) => {
+            response.setEncoding('utf8');
+            let rawData = '';
+            response.on('data', (chunk) => { rawData += chunk; });
+            response.on('end', () => {
+                try {
+                    parseString(rawData, function (err, r) {
+                        console.log(r);
+                        if (r.html) {
+                            console.dir(r.html.body.div)
+                        }
+                        const data = r.GoodreadsResponse.reviews[0];
+                        console.dir(data.review[0].body);
+                        const pagination = data['$'];
+                        const reviews = data.review.map((r) => r.id);
+                        const urls = data.review.map((r) => r.url);
+                        const books = data.review.map((r) => {
+                            console.log(r.date_added);
+                            return {
+                                title: r.book[0].title[0],
+                                author: r.book[0].authors[0].author[0].name[0],
+                                reviewId: r.id[0],
+                                reviewUrl: r.url[0],
+                                date: r.date_added[0]
                             }
                         });
-                    } catch (e) {
-                        console.error('e:', e.message);
-                        res.send(e);
-                    }
-                });
-            }).on('error', (e) => {
-                console.error(`Got error: ${e.message}`);
-                res.send(e);
+                        // console.log({ reviews, urls });
+                        // console.log(books);
+                        console.log({ pagination })
+                        // console.log(data)
+                        // bookIds = books.map((book) => book.reviewId);
+                        allBooks = allBooks.concat(books);
+                        // return bookIds
+                        console.log({ allBooks });
+
+                        if (pagination.end === pagination.total) {
+                        // if (i === 1) {
+                            console.log("BOOKS:", books);
+                            scrapeReviews(req, res, allBooks);
+                        } else {
+                            i += 1;
+                            setTimeout(() => {
+                                go(i);
+                            }, 1100)
+                        }
+                    });
+                } catch (e) {
+                    console.error('e:', e.message);
+                    res.send(e);
+                }
             });
+        }).on('error', (e) => {
+            console.error(`Got error: ${e.message}`);
+            res.send(e);
+        });
 
-            go(1);
-    }
-
-app.post('/', function (req, res) {
-    console.log(req.body);
-    let bodyString = req.body.toString().replace('$', 'dlr');
-
-    MongoClient.connect(url, function (err, db) {
-        if (err) {
-            console.log('Unable to connect to the mongoDB server. Error:', err);
-        } else {
-            console.log('Connection established to', url);
-            let collection = db.collection('read');
-            try {
-                collection.findOneAndReplace({}, {
-                    "time": new Date(),
-                    "data": JSON.stringify(req.body)
-                });
-            } catch (e) {
-                console.log("Caught error:", e);
-            }
-            db.close();
-        }
-    });
-});
-
-app.get('/nudge', function (req, res) {
-    // remind app to get ready to serve requests
-    res.send(':)');
-});
-
-app.get('/api', function (req, res) {
-    // get result from db, parse, and return
-    MongoClient.connect(url, function (err, db) {
-        if (err) {
-            console.log('Unable to connect to the mongoDB server. Error:', err);
-            res.send(err);
-        } else {
-            console.log('Connection established to', url);
-            let collection = db.collection('read');
-            try {
-                let result = collection.findOne()
-                    .then((result) => {
-                        console.log(result);
-                        res.send(result);
-                    })
-                    .catch((err) => {
-                        console.log('error:', err);
-                        res.send(err);
-                    })
-            } catch (e) {
-                console.log(e);
-                res.send(err);
-            }
-            db.close();
-        }
-    });
-})
+    go(1);
+}
 
 app.get('/', function (req, res) {
     const id = req.query.id;
@@ -141,60 +96,7 @@ app.get('/', function (req, res) {
     const perPage = req.query.per_page;
 
     const reviews = getReviews(req, res, id, shelf, sort, perPage);
-    // console.log({ reviews })
-    // res.send(reviews);
 });
-
-// Get a user's review for a given book
-// Get an xml response that contains the review and rating for the specified book and user
-// URL: https://www.goodreads.com/review/show_by_user_and_book.xml    (sample url)
-// HTTP method: GET
-// Parameters:
-// key: Developer key (required).
-// user_id: id of the user
-// book_id: id of the book
-// include_review_on_work: 'true' or 'false' indicating whether to return a review for another book in the same work if review not found for the specified book (default 'false', optional)
-
-// app.get('/review', (req, res) => {
-//     const book_id = req.query.book_id;
-//     const user_id = req.query.user_id;
-
-//     var options = {
-//         hostname: 'https://www.goodreads.com',
-//         port: 443,
-//         path: `/review/show_by_user_and_book.xml?user_id=${ user_id }&book_id=${ book_id }&key=${ key }`,
-//         method: 'GET'
-//       };
-
-//     https.get(`https://www.goodreads.com/review/show_by_user_and_book.xml?user_id=${ user_id }&book_id=${ book_id }&key=${ key }`,
-//         (response) => {
-//             response.setEncoding('utf8');
-//             let rawData = '';
-//             response.on('data', (chunk) => { rawData += chunk; });
-//             response.on('end', () => {
-//                 try {
-//                     // this will be an object
-//                     parseString(rawData, function (err, r) {
-//                         // console.log(Object.keys(r.GoodreadsResponse));
-//                         console.log(r.GoodreadsResponse, r.GoodreadsResponse.review[0].body)
-//                         res.send(JSON.stringify(r.GoodreadsResponse.review[0].body));
-//                         // console.log(r)
-//                         // res.send(r);
-//                     });
-
-//                     // this will be the raw XML
-//                     // console.log(rawData);
-//                 } catch (e) {
-//                     console.error('e:', e.message);
-//                     res.send(e);
-//                 }
-//             });
-//         }).on('error', (e) => {
-//             console.error(`Got error: ${e.message}`);
-//             res.send(e);
-//         });
-// });
-
 
 app.get('/review', (req, res) => {
     const book_id = req.query.book_id;
@@ -203,11 +105,11 @@ app.get('/review', (req, res) => {
     var options = {
         hostname: 'https://www.goodreads.com',
         port: 443,
-        path: `/review/show_by_user_and_book.xml?user_id=${ user_id }&book_id=${ book_id }&key=${ key }`,
+        path: `/review/show_by_user_and_book.xml?user_id=${user_id}&book_id=${book_id}&key=${key}`,
         method: 'GET'
-      };
+    };
 
-    https.get(`https://www.goodreads.com/review/show_by_user_and_book.xml?user_id=${ user_id }&book_id=${ book_id }&key=${ key }`,
+    https.get(`https://www.goodreads.com/review/show_by_user_and_book.xml?user_id=${user_id}&book_id=${book_id}&key=${key}`,
         (response) => {
             response.setEncoding('utf8');
             let rawData = '';
@@ -216,11 +118,7 @@ app.get('/review', (req, res) => {
                 try {
                     // this will be an object
                     parseString(rawData, function (err, r) {
-                        // console.log(Object.keys(r.GoodreadsResponse));
-                        console.log(r.GoodreadsResponse, r.GoodreadsResponse.review[0].body)
                         res.send(JSON.stringify(r.GoodreadsResponse.review[0].body));
-                        // console.log(r)
-                        // res.send(r);
                     });
 
                     // this will be the raw XML
@@ -236,58 +134,86 @@ app.get('/review', (req, res) => {
         });
 });
 
-// method to get a review in full (to scrape, since there is no public endpoint for a full review)
-https://www.goodreads.com/review/show/2318742998?book_show_action=false
-app.get('/scrape', (req, res) => {
-    const userId = req.query.userId;
-
-    // get all reviews by user
-
-    const reviews = ["2318742998", "2827741335"];
-
-    scrapeReviews(req, res, reviews)
-        .then((r) => {
-            console.log({ r })
-        });
-
-});
-
-function scrapeReviews(req, res, reviews) {
+function scrapeReviews(req, res, books) {
+    const reviews = books.map((book) => book.reviewId);
+    console.log("REVIEWS:", reviews);
     let reviewsData = [];
 
-    // scrape each review
-    return new Promise((resolve, reject) => {
-        reviews.forEach((review, i) => {
-            const url = `https://www.goodreads.com/review/show/${ review }`;
-            scrapeIt(url, {
+    // todo: this should just be books to scrape all
+    const promises = books.map((book) => {
+        const i = book.reviewId;
+        const d = book.date;
+
+        return new Promise((resolve, reject) => {
+            const getUrl = (slug) => `https://www.goodreads.com/review/show/${slug}`;
+
+            const scrape = (slug) => scrapeIt(getUrl(slug), {
                 title: ".bookTitle",
                 author: ".authorName",
-                review: ".reviewText"
+                review: {
+                    selector: ".reviewText",
+                    how: "html"
+                }
             }).then(({ data, response }) => {
-                // console.log(`Status Code: ${response.statusCode}`);
-                // console.log(data);
-                data.url = url;
-                // data.author.replace("\\", "");
-                // data.review.replace("\\", "");
-                // data.title.replace("\\", "");
-                reviewsData.push(data);
-                // console.log({ i, length: reviews.length - 1 });
-                if (i === reviews.length - 1) {
+                if (!data || !data.review || !data.review.length) {
                     resolve();
                 }
-            })
-        })
-    }).then(() => {
-        console.log("then");
-        console.log(reviewsData);
-        // res.send(reviewsData);
-        return reviewsData;
+
+                data.review.replace("'", "&apos;");
+                data.review.replace('"', '&quot;');
+                data.review += '<br /><br />See this review and more at <a href="' + getUrl(slug) + '">Goodreads</a>.';
+                data.url = getUrl(slug);
+                reviewsData.push(data);
+                data.date = d;
+
+                if (i === reviews.length - 1) {
+                    // console.log("next scrape is", i + 1);
+                    resolve();
+                } else {
+                    console.log("finished scraping");
+                    resolve();
+                }
+            });
+
+            scrape(i);
+        });
+    });
+
+    // scrape each review
+    Promise.all(promises).then((r) => {
+        console.log("REVIEWSDATA:", reviewsData);
+        let formattedData = "INSERT INTO `yee_posts` (`ID`, `post_author`, `post_date`, `post_date_gmt`, `post_content`, `post_title`, `post_excerpt`, `post_status`, `comment_status`, `ping_status`, `post_password`, `post_name`, `to_ping`, `pinged`, `post_modified`, `post_modified_gmt`, `post_content_filtered`, `post_parent`, `guid`, `menu_order`, `post_type`, `post_mime_type`, `comment_count`) VALUES ";
+
+        reviewsData.forEach((data, i) => {
+            const { review, title, author, url, date } = data;
+
+            const mmt = moment(date);
+            const formatted = mmt.format("YYYY-MM-DD HH:MM:SS");
+            var month = mmt.month() + 1;
+            var day = mmt.date();
+            var year  = mmt.year();
+
+            // latest wordpress post id
+            const currentPostNumber = 1949;
+
+            // dates to go through
+            const earliest = "10/18/2017 00:00:00";
+            const latest = "05/24/2019 00:00:00"
+
+            if (mmt.isBetween(earliest, latest)) {
+                formattedData += (
+                    `(${ currentPostNumber + i },2,'${ formatted }','${ formatted }','${ review }','${ title }','','publish','open','open','','${ title.split(" ").join("-").replace("'", "") }','','','${ formatted }','${ formatted }','',0,'https://www.sweetheartseer.com/?p=${ currentPostNumber + i }',0,'post','',0),`
+                );
+            }
+        });
+
+        console.log("FORMATTED DATA:", formattedData);
+
+        // date format col 256 is http://www.sweetheartseerbooks.com/2019/06/01/becoming-by-michelle-obama/
+        res.setHeader('content-type', 'text/plain');
+        res.send(formattedData);
     }, (e) => console.log({ e }))
-    .catch((error) => console.log({ error }))
-
-    // if valid, push to reviews[]
-
-    // output reviews to text file
+        .catch((error) => console.log({ error }));
 }
 
 console.log('App listening on port', port);

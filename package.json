@@ -17,6 +17,7 @@
         "express": "^4.15.4",
         "http": "0.0.0",
         "https": "^1.0.0",
+        "moment": "^2.24.0",
         "mongodb": "^2.2.31",
         "node-fetch": "^1.7.3",
         "scrape-it": "^5.1.4",
