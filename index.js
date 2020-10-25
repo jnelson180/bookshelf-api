@@ -80,11 +80,12 @@ app.get('/', function (req, res) {
     const shelf = req.query.shelf;
     const sort = req.query.sort;
     const perPage = req.query.per_page;
+    const page = req.query.page;
 
     var reviews = null;
 
     https.get("https://www.goodreads.com/review/list?v=2&id=" + id + "&shelf=" + shelf +
-        "&sort=" + sort + "&key=" + key + "&per_page=" + perPage,
+        "&sort=" + sort + "&key=" + key + "&per_page=" + perPage + "&page=" + page,
         (response) => {
             response.setEncoding('utf8');
             let rawData = '';
